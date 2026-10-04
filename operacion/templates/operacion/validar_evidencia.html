@@ -22,7 +22,16 @@
     {% for field in form %}
     <div class="mb-3">
         <label class="form-label d-block">{{ field.label }}</label>
+        {% if field.name == "decision" %}
+        {% for radio in field %}
+        <div class="form-check">
+            {{ radio.tag }}
+            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+        </div>
+        {% endfor %}
+        {% else %}
         {{ field }}
+        {% endif %}
         {% for error in field.errors %}
         <div class="text-danger small">{{ error }}</div>
         {% endfor %}

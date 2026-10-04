@@ -67,11 +67,17 @@ class EvidenciaForm(EstiloBootstrapMixin, forms.ModelForm):
 
 
 class ValidacionForm(EstiloBootstrapMixin, forms.ModelForm):
+    # Declarado explícito (en vez de dejar que ModelForm lo genere solo) para
+    # que no aparezca la opción en blanco "- Select an option -" que Django
+    # agrega automáticamente a los ChoiceField de un modelo sin default.
+    decision = forms.ChoiceField(
+        choices=Validacion.Decision.choices, widget=forms.RadioSelect, label="Decisión"
+    )
+
     class Meta:
         model = Validacion
         fields = ["decision", "observacion"]
         widgets = {
-            "decision": forms.RadioSelect,
             "observacion": forms.Textarea(attrs={"rows": 3}),
         }
 

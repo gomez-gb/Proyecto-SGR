@@ -89,6 +89,15 @@ class ValidarEvidenciaTests(TestCase):
         )
         self.evidencia = Evidencia.objects.create(actividad=self.actividad, archivo=_archivo_jpg(), estado_revision="pendiente")
 
+    def test_pantalla_de_validacion_no_tiene_opcion_en_blanco(self):
+        # Django genera automaticamente una opcion vacia para ChoiceField sin
+        # default ("- Select an option -"); decision se declara explicito en
+        # el form justamente para que esto no vuelva a aparecer.
+        self.client.force_login(self.verificador)
+        respuesta = self.client.get(reverse("operacion:validar_evidencia", args=[self.evidencia.pk]))
+        self.assertNotContains(respuesta, "Select an option")
+        self.assertContains(respuesta, 'value="APROBADO"')
+
     def test_rechazar_sin_observacion_falla(self):
         self.client.force_login(self.verificador)
         respuesta = self.client.post(
