@@ -18,8 +18,13 @@
 <h2 class="h5">Evidencia</h2>
 {% with evidencia=actividad.evidencia %}
 <p>Código verificador: <strong>{{ evidencia.codigo }}</strong></p>
+{% if evidencia.archivo %}
 <p>Estado de revisión: <span class="badge bg-warning text-dark">{{ evidencia.estado_revision }}</span></p>
 <a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener">Ver archivo adjunto</a>
+{% else %}
+<p class="text-danger">Todavía no se adjunta el archivo de evidencia.</p>
+<a class="btn btn-primary btn-sm" href="{% url 'operacion:subir_evidencia' actividad.pk %}">Adjuntar evidencia</a>
+{% endif %}
 {% endwith %}
 <div class="mt-4">
     <a href="{% url 'operacion:lista_actividades' %}">&larr; Volver a mis actividades</a>

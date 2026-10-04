@@ -43,9 +43,9 @@ class Actividad(models.Model):
 class Evidencia(models.Model):
     actividad = models.OneToOneField(Actividad, on_delete=models.CASCADE, related_name="evidencia")
     codigo = models.CharField(max_length=12, unique=True, editable=False)
-    archivo = models.FileField(upload_to="evidencias/%Y/%m/")
+    archivo = models.FileField(upload_to="evidencias/%Y/%m/", blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
-    estado_revision = models.CharField(max_length=30, default="pendiente")
+    estado_revision = models.CharField(max_length=30, default="sin_archivo")
     metadatos = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):

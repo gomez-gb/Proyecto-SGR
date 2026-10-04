@@ -50,6 +50,10 @@ class EvidenciaForm(EstiloBootstrapMixin, forms.ModelForm):
         model = Evidencia
         fields = ["archivo"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["archivo"].required = True
+
     def clean_archivo(self):
         archivo = self.cleaned_data["archivo"]
         extension = archivo.name.rsplit(".", 1)[-1].lower()

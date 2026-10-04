@@ -1,0 +1,20 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Adjuntar evidencia{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Adjuntar evidencia — Actividad #{{ actividad.pk }}</h1>
+<p class="text-muted">Código verificador asignado: <strong>{{ actividad.evidencia.codigo }}</strong></p>
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="mb-3">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        <div class="form-text">Formatos permitidos: jpg, jpeg, png, pdf — máximo 5 MB.</div>
+        {% for error in field.errors %}
+        <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">Adjuntar evidencia</button>
+</form>
+{% endblock %}

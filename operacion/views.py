@@ -1,33 +1,42 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import ActividadForm, CompromisoForm, EvidenciaForm
-from .models import Actividad, Compromiso
+from .models import Actividad, Compromiso, Evidencia
 
 
 @login_required
 def registrar_actividad(request):
     if request.method == "POST":
         actividad_form = ActividadForm(request.POST)
-        evidencia_form = EvidenciaForm(request.POST, request.FILES)
-        if actividad_form.is_valid() and evidencia_form.is_valid():
-            with transaction.atomic():
-                actividad = actividad_form.save(commit=False)
-                actividad.funcionario = request.user
-                actividad.save()
-                evidencia = evidencia_form.save(commit=False)
-                evidencia.actividad = actividad
-                evidencia.save()
-            return redirect("operacion:detalle_actividad", pk=actividad.pk)
+        if actividad_form.is_valid():
+            actividad = actividad_form.save(commit=False)
+            actividad.funcionario = request.user
+            actividad.save()
+            Evidencia.objects.create(actividad=actividad)
+            messages.info(request, "Actividad registrada. Ahora adjunta la evidencia.")
+            return redirect("operacion:subir_evidencia", pk=actividad.pk)
     else:
         actividad_form = ActividadForm()
-        evidencia_form = EvidenciaForm()
-    return render(
-        request,
-        "operacion/registrar_actividad.html",
-        {"actividad_form": actividad_form, "evidencia_form": evidencia_form},
-    )
+    return render(request, "operacion/registrar_actividad.html", {"actividad_form": actividad_form})
+
+
+@login_required
+def subir_evidencia(request, pk):
+    actividad = get_object_or_404(Actividad, pk=pk, funcionario=request.user)
+    evidencia = actividad.evidencia
+    if request.method == "POST":
+        form = EvidenciaForm(request.POST, request.FILES, instance=evidencia)
+        if form.is_valid():
+            evidencia = form.save(commit=False)
+            evidencia.estado_revision = "pendiente"
+            evidencia.save()
+            messages.success(request, "Evidencia adjuntada correctamente.")
+            return redirect("operacion:detalle_actividad", pk=actividad.pk)
+    else:
+        form = EvidenciaForm(instance=evidencia)
+    return render(request, "operacion/subir_evidencia.html", {"form": form, "actividad": actividad})
 
 
 @login_required

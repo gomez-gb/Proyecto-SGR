@@ -18,7 +18,10 @@
             <td>{{ actividad.get_item_display }}</td>
             <td>{{ actividad.solicitud_problema|truncatechars:60 }}</td>
             <td><span class="badge bg-secondary">{{ actividad.estado }}</span></td>
-            <td>{{ actividad.evidencia.codigo|default:"—" }}</td>
+            <td>
+                {{ actividad.evidencia.codigo }}
+                {% if not actividad.evidencia.archivo %}<span class="badge bg-danger">sin archivo</span>{% endif %}
+            </td>
             <td><a href="{% url 'operacion:detalle_actividad' actividad.pk %}">Ver</a></td>
         </tr>
         {% endfor %}
