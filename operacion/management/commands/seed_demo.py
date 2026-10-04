@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand
 from operacion.models import Perfil
 
 USUARIOS_DEMO = [
-    ("funcionario1", "sgr-demo-2026", Perfil.Rol.FUNCIONARIO),
-    ("verificador1", "sgr-demo-2026", Perfil.Rol.VERIFICADOR),
+    ("funcionario1", "Test1234!", Perfil.Rol.FUNCIONARIO),
+    ("verificador1", "Test1234!", Perfil.Rol.VERIFICADOR),
 ]
 
 
