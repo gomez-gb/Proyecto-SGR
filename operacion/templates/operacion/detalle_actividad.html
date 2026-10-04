@@ -1,0 +1,25 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Actividad #{{ actividad.pk }}{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Actividad #{{ actividad.pk }}</h1>
+<dl class="row">
+    <dt class="col-sm-3">Solicitud / problema</dt>
+    <dd class="col-sm-9">{{ actividad.solicitud_problema }}</dd>
+    <dt class="col-sm-3">Acción realizada</dt>
+    <dd class="col-sm-9">{{ actividad.accion_realizada }}</dd>
+    <dt class="col-sm-3">Fecha</dt>
+    <dd class="col-sm-9">{{ actividad.fecha }}</dd>
+    <dt class="col-sm-3">Estado</dt>
+    <dd class="col-sm-9"><span class="badge bg-secondary">{{ actividad.estado }}</span></dd>
+</dl>
+<hr>
+<h2 class="h5">Evidencia</h2>
+{% with evidencia=actividad.evidencia %}
+<p>Código verificador: <strong>{{ evidencia.codigo }}</strong></p>
+<p>Estado de revisión: <span class="badge bg-warning text-dark">{{ evidencia.estado_revision }}</span></p>
+<a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener">Ver archivo adjunto</a>
+{% endwith %}
+<div class="mt-4">
+    <a href="{% url 'operacion:lista_actividades' %}">&larr; Volver a mis actividades</a>
+</div>
+{% endblock %}

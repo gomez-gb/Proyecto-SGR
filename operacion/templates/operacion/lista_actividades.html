@@ -1,0 +1,30 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Mis actividades{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 m-0">Mis actividades</h1>
+    <a class="btn btn-primary" href="{% url 'operacion:registrar_actividad' %}">+ Registrar actividad</a>
+</div>
+{% if actividades %}
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr><th>Fecha</th><th>Solicitud/problema</th><th>Estado</th><th>Evidencia</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for actividad in actividades %}
+        <tr>
+            <td>{{ actividad.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ actividad.solicitud_problema }}</td>
+            <td><span class="badge bg-secondary">{{ actividad.estado }}</span></td>
+            <td>{{ actividad.evidencia.codigo|default:"—" }}</td>
+            <td><a href="{% url 'operacion:detalle_actividad' actividad.pk %}">Ver</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Todavía no registras actividades.</p>
+{% endif %}
+{% endblock %}

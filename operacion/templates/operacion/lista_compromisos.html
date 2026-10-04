@@ -1,0 +1,29 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Compromisos{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 m-0">Mis compromisos</h1>
+    <a class="btn btn-primary" href="{% url 'operacion:registrar_compromiso' %}">+ Registrar compromiso</a>
+</div>
+{% if compromisos %}
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr><th>Fecha</th><th>Descripción</th><th>Solicitante</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+        {% for compromiso in compromisos %}
+        <tr class="{% if compromiso.esta_vencido %}table-danger{% endif %}">
+            <td>{{ compromiso.fecha_compromiso|date:"d/m/Y" }}</td>
+            <td>{{ compromiso.descripcion }}</td>
+            <td>{{ compromiso.solicitante }}</td>
+            <td><span class="badge bg-secondary">{{ compromiso.get_estado_display }}</span></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Todavía no registras compromisos.</p>
+{% endif %}
+{% endblock %}

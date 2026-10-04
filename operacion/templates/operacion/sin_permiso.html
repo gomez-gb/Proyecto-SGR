@@ -1,0 +1,7 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Sin permiso{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">No tienes permiso para ver este recurso</h1>
+<p class="text-muted">Esta actividad pertenece a otro funcionario.</p>
+<a href="{% url 'operacion:lista_actividades' %}">&larr; Volver</a>
+{% endblock %}

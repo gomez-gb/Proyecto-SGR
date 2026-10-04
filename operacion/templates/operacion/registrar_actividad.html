@@ -1,0 +1,34 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Registrar actividad{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Registrar actividad</h1>
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <fieldset class="mb-4">
+        <legend class="h6">Actividad</legend>
+        {% for field in actividad_form %}
+        <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+            <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="mb-4">
+        <legend class="h6">Evidencia</legend>
+        {% for field in evidencia_form %}
+        <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            <div class="form-text">Formatos permitidos: jpg, jpeg, png, pdf — máximo 5 MB.</div>
+            {% for error in field.errors %}
+            <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </fieldset>
+    <button class="btn btn-primary" type="submit">Registrar</button>
+</form>
+{% endblock %}

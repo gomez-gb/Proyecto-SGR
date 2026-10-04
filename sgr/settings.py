@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-eu4+ecag^kh6@084+xu8el2g&vgo!lmipb2s0^k)_ur$%m7q@0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
 
 # Application definition
@@ -116,6 +116,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'operacion:lista_actividades'
 
 
 # Email
