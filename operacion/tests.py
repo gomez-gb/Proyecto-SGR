@@ -1,3 +1,112 @@
-from django.test import TestCase
+import datetime
+import json
 
-# Create your tests here.
+from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase
+from django.urls import reverse
+
+from .models import Actividad, Evidencia, Perfil
+
+
+def _archivo_jpg(nombre="evidencia.jpg"):
+    return SimpleUploadedFile(nombre, b"contenido-de-prueba", content_type="image/jpeg")
+
+
+class RegistrarActividadTests(TestCase):
+    """HU-01/HU-09/HU-10: registro de actividad + evidencia en una sola pantalla (Wireframe1)."""
+
+    def setUp(self):
+        self.funcionario = User.objects.create_user("func_test", password="x")
+        Perfil.objects.create(usuario=self.funcionario, rol=Perfil.Rol.FUNCIONARIO)
+        self.client.force_login(self.funcionario)
+        self.datos_validos = {
+            "fecha": "2026-10-04",
+            "item": "OTRO",
+            "solicitud_problema": "Descripción de prueba",
+            "accion_realizada": "Acción de prueba",
+            "contacto": "",
+            "telefono": "",
+        }
+
+    def test_registro_valido_crea_actividad_y_evidencia(self):
+        respuesta = self.client.post(
+            reverse("operacion:registrar_actividad"),
+            {**self.datos_validos, "archivo": _archivo_jpg()},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn("redirect", json.loads(respuesta.content))
+        self.assertEqual(Actividad.objects.count(), 1)
+        actividad = Actividad.objects.first()
+        self.assertTrue(actividad.evidencia.archivo)
+        self.assertTrue(actividad.evidencia.codigo)
+
+    def test_fecha_invalida_no_crea_nada_y_devuelve_error_json(self):
+        datos = {**self.datos_validos, "fecha": "0009-09-09", "archivo": _archivo_jpg()}
+        respuesta = self.client.post(
+            reverse("operacion:registrar_actividad"), datos, HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(respuesta.status_code, 400)
+        errores = json.loads(respuesta.content)["errors"]
+        self.assertIn("fecha", errores)
+        self.assertEqual(Actividad.objects.count(), 0)
+
+    def test_extension_no_permitida_no_crea_nada(self):
+        archivo_malo = SimpleUploadedFile("malware.exe", b"x", content_type="application/octet-stream")
+        respuesta = self.client.post(
+            reverse("operacion:registrar_actividad"),
+            {**self.datos_validos, "archivo": archivo_malo},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertIn("archivo", json.loads(respuesta.content)["errors"])
+        self.assertEqual(Actividad.objects.count(), 0)
+
+    def test_verificador_no_puede_registrar_actividad(self):
+        verificador = User.objects.create_user("verif_test", password="x")
+        Perfil.objects.create(usuario=verificador, rol=Perfil.Rol.VERIFICADOR)
+        self.client.force_login(verificador)
+        respuesta = self.client.get(reverse("operacion:registrar_actividad"))
+        self.assertEqual(respuesta.status_code, 403)
+
+
+class ValidarEvidenciaTests(TestCase):
+    """HU-11: validación de evidencia por el Verificador."""
+
+    def setUp(self):
+        funcionario = User.objects.create_user("func_test2", password="x")
+        Perfil.objects.create(usuario=funcionario, rol=Perfil.Rol.FUNCIONARIO)
+        self.verificador = User.objects.create_user("verif_test2", password="x")
+        Perfil.objects.create(usuario=self.verificador, rol=Perfil.Rol.VERIFICADOR)
+
+        self.actividad = Actividad.objects.create(
+            funcionario=funcionario,
+            fecha=datetime.date(2026, 10, 4),
+            item=Actividad.Item.OTRO,
+            solicitud_problema="x",
+            accion_realizada="x",
+        )
+        self.evidencia = Evidencia.objects.create(actividad=self.actividad, archivo=_archivo_jpg(), estado_revision="pendiente")
+
+    def test_rechazar_sin_observacion_falla(self):
+        self.client.force_login(self.verificador)
+        respuesta = self.client.post(
+            reverse("operacion:validar_evidencia", args=[self.evidencia.pk]),
+            {"decision": "RECHAZADO", "observacion": ""},
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.evidencia.refresh_from_db()
+        self.assertEqual(self.evidencia.estado_revision, "pendiente")
+
+    def test_aprobar_actualiza_estados(self):
+        self.client.force_login(self.verificador)
+        respuesta = self.client.post(
+            reverse("operacion:validar_evidencia", args=[self.evidencia.pk]),
+            {"decision": "APROBADO", "observacion": ""},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.evidencia.refresh_from_db()
+        self.actividad.refresh_from_db()
+        self.assertEqual(self.evidencia.estado_revision, "aprobada")
+        self.assertEqual(self.actividad.estado, "validada")

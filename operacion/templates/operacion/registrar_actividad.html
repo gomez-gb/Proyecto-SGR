@@ -2,20 +2,87 @@
 {% block titulo %}Registrar actividad{% endblock %}
 {% block contenido %}
 <h1 class="h4 mb-3">Registrar actividad</h1>
-<form method="post" novalidate>
+<div id="error-general" class="alert alert-danger" hidden></div>
+<form id="form-actividad" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
-    <fieldset class="mb-4">
-        <legend class="h6">Actividad</legend>
-        {% for field in actividad_form %}
-        <div class="mb-3">
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% for error in field.errors %}
-            <div class="text-danger small">{{ error }}</div>
-            {% endfor %}
+    <div class="row">
+        <div class="col-md-7">
+            <fieldset class="mb-4">
+                <legend class="h6">Actividad</legend>
+                {% for field in actividad_form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    <div class="invalid-feedback d-block text-danger small" data-errores-de="{{ field.name }}">
+                        {% for error in field.errors %}{{ error }}{% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </fieldset>
         </div>
-        {% endfor %}
-    </fieldset>
-    <button class="btn btn-primary" type="submit">Registrar y continuar a evidencia</button>
+        <div class="col-md-5">
+            <fieldset class="mb-4">
+                <legend class="h6">Evidencia</legend>
+                {% for field in evidencia_form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    <div class="form-text">Formatos permitidos: jpg, jpeg, png, pdf — máximo 5 MB.</div>
+                    <div class="invalid-feedback d-block text-danger small" data-errores-de="{{ field.name }}">
+                        {% for error in field.errors %}{{ error }}{% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Guardar actividad</button>
 </form>
+
+<script>
+document.getElementById("form-actividad").addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    const formulario = evento.target;
+    const boton = formulario.querySelector("button[type=submit]");
+    const errorGeneral = document.getElementById("error-general");
+    boton.disabled = true;
+    errorGeneral.hidden = true;
+    document.querySelectorAll("[data-errores-de]").forEach((el) => (el.textContent = ""));
+
+    fetch(formulario.action || window.location.pathname, {
+        method: "POST",
+        body: new FormData(formulario),
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+    })
+        .then((respuesta) => respuesta.json().then((datos) => ({ status: respuesta.status, datos })))
+        .then(({ status, datos }) => {
+            if (status === 200 && datos.redirect) {
+                window.location = datos.redirect;
+                return;
+            }
+            // El archivo seleccionado en el <input type="file"> NO se pierde aquí:
+            // la página nunca se recarga, solo se muestran los errores recibidos.
+            if (datos.errors) {
+                let huboErrorDeCampo = false;
+                Object.entries(datos.errors).forEach(([campo, mensajes]) => {
+                    const contenedor = document.querySelector(`[data-errores-de="${campo}"]`);
+                    if (contenedor) {
+                        contenedor.textContent = mensajes.join(" ");
+                        huboErrorDeCampo = true;
+                    }
+                });
+                if (!huboErrorDeCampo) {
+                    errorGeneral.textContent = "No se pudo registrar la actividad. Revisa los datos ingresados.";
+                    errorGeneral.hidden = false;
+                }
+            }
+            boton.disabled = false;
+        })
+        .catch(() => {
+            errorGeneral.textContent = "Error de conexión al registrar la actividad. Intenta de nuevo.";
+            errorGeneral.hidden = false;
+            boton.disabled = false;
+        });
+});
+</script>
 {% endblock %}

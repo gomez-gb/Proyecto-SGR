@@ -3,7 +3,9 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .forms import ActividadForm, CompromisoForm, EvidenciaForm, ValidacionForm
 from .models import Actividad, Compromiso, Evidencia, Perfil
@@ -36,24 +38,44 @@ def inicio(request):
     return redirect("operacion:lista_actividades")
 
 
+def _es_ajax(request):
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
 @requiere_funcionario
 def registrar_actividad(request):
     if request.method == "POST":
         actividad_form = ActividadForm(request.POST)
-        if actividad_form.is_valid():
+        evidencia_form = EvidenciaForm(request.POST, request.FILES)
+        if actividad_form.is_valid() and evidencia_form.is_valid():
             actividad = actividad_form.save(commit=False)
             actividad.funcionario = request.user
             actividad.save()
-            Evidencia.objects.create(actividad=actividad)
-            messages.info(request, "Actividad registrada. Ahora adjunta la evidencia.")
-            return redirect("operacion:subir_evidencia", pk=actividad.pk)
+            evidencia = evidencia_form.save(commit=False)
+            evidencia.actividad = actividad
+            evidencia.estado_revision = "pendiente"
+            evidencia.save()
+            destino = reverse("operacion:detalle_actividad", args=[actividad.pk])
+            if _es_ajax(request):
+                return JsonResponse({"redirect": destino})
+            messages.success(request, "Actividad y evidencia registradas correctamente.")
+            return redirect(destino)
+        if _es_ajax(request):
+            errores = {**actividad_form.errors, **evidencia_form.errors}
+            return JsonResponse({"errors": errores}, status=400)
     else:
         actividad_form = ActividadForm()
-    return render(request, "operacion/registrar_actividad.html", {"actividad_form": actividad_form})
+        evidencia_form = EvidenciaForm()
+    return render(
+        request,
+        "operacion/registrar_actividad.html",
+        {"actividad_form": actividad_form, "evidencia_form": evidencia_form},
+    )
 
 
 @requiere_funcionario
 def subir_evidencia(request, pk):
+    """Re-adjuntar evidencia cuando el Verificador solicitó corrección (HU-11)."""
     actividad = get_object_or_404(Actividad, pk=pk, funcionario=request.user)
     evidencia = actividad.evidencia
     if request.method == "POST":
@@ -62,7 +84,9 @@ def subir_evidencia(request, pk):
             evidencia = form.save(commit=False)
             evidencia.estado_revision = "pendiente"
             evidencia.save()
-            messages.success(request, "Evidencia adjuntada correctamente.")
+            actividad.estado = "registrada"
+            actividad.save()
+            messages.success(request, "Evidencia actualizada correctamente.")
             return redirect("operacion:detalle_actividad", pk=actividad.pk)
     else:
         form = EvidenciaForm(instance=evidencia)
