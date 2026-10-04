@@ -9,12 +9,13 @@
 <body>
 <nav class="navbar navbar-expand-sm navbar-dark bg-dark mb-4">
     <div class="container">
-        <a class="navbar-brand" href="{% url 'operacion:lista_actividades' %}">SGR</a>
+        <a class="navbar-brand" href="{% url 'operacion:inicio' %}">SGR</a>
         {% if user.is_authenticated %}
         <div class="d-flex gap-3">
+            {% if user.perfil.rol == "FUNCIONARIO" %}
             <a class="nav-link text-light" href="{% url 'operacion:lista_actividades' %}">Actividades</a>
             <a class="nav-link text-light" href="{% url 'operacion:lista_compromisos' %}">Compromisos</a>
-            {% if user.perfil.rol == "VERIFICADOR" %}
+            {% elif user.perfil.rol == "VERIFICADOR" %}
             <a class="nav-link text-light" href="{% url 'operacion:lista_pendientes_validacion' %}">Validaciones</a>
             {% endif %}
             <span class="text-light">{{ user.username }}</span>

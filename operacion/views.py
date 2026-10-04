@@ -9,19 +9,34 @@ from .forms import ActividadForm, CompromisoForm, EvidenciaForm, ValidacionForm
 from .models import Actividad, Compromiso, Evidencia, Perfil
 
 
-def requiere_verificador(vista):
-    @wraps(vista)
-    @login_required
-    def envoltura(request, *args, **kwargs):
-        perfil = getattr(request.user, "perfil", None)
-        if not perfil or perfil.rol != Perfil.Rol.VERIFICADOR:
-            raise PermissionDenied("Esta acción requiere rol Verificador.")
-        return vista(request, *args, **kwargs)
+def _requiere_rol(rol_requerido):
+    def decorador(vista):
+        @wraps(vista)
+        @login_required
+        def envoltura(request, *args, **kwargs):
+            perfil = getattr(request.user, "perfil", None)
+            if not perfil or perfil.rol != rol_requerido:
+                raise PermissionDenied(f"Esta acción requiere rol {rol_requerido}.")
+            return vista(request, *args, **kwargs)
 
-    return envoltura
+        return envoltura
+
+    return decorador
+
+
+requiere_funcionario = _requiere_rol(Perfil.Rol.FUNCIONARIO)
+requiere_verificador = _requiere_rol(Perfil.Rol.VERIFICADOR)
 
 
 @login_required
+def inicio(request):
+    perfil = getattr(request.user, "perfil", None)
+    if perfil and perfil.rol == Perfil.Rol.VERIFICADOR:
+        return redirect("operacion:lista_pendientes_validacion")
+    return redirect("operacion:lista_actividades")
+
+
+@requiere_funcionario
 def registrar_actividad(request):
     if request.method == "POST":
         actividad_form = ActividadForm(request.POST)
@@ -37,7 +52,7 @@ def registrar_actividad(request):
     return render(request, "operacion/registrar_actividad.html", {"actividad_form": actividad_form})
 
 
-@login_required
+@requiere_funcionario
 def subir_evidencia(request, pk):
     actividad = get_object_or_404(Actividad, pk=pk, funcionario=request.user)
     evidencia = actividad.evidencia
@@ -62,13 +77,13 @@ def detalle_actividad(request, pk):
     return render(request, "operacion/detalle_actividad.html", {"actividad": actividad})
 
 
-@login_required
+@requiere_funcionario
 def lista_actividades(request):
     actividades = Actividad.objects.filter(funcionario=request.user).select_related("evidencia").order_by("-fecha")
     return render(request, "operacion/lista_actividades.html", {"actividades": actividades})
 
 
-@login_required
+@requiere_funcionario
 def registrar_compromiso(request):
     if request.method == "POST":
         form = CompromisoForm(request.POST)
@@ -82,7 +97,7 @@ def registrar_compromiso(request):
     return render(request, "operacion/registrar_compromiso.html", {"form": form})
 
 
-@login_required
+@requiere_funcionario
 def lista_compromisos(request):
     compromisos = Compromiso.objects.filter(responsable=request.user).order_by("fecha_compromiso")
     return render(request, "operacion/lista_compromisos.html", {"compromisos": compromisos})
