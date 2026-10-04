@@ -3,12 +3,14 @@
 {% block contenido %}
 <h1 class="h4 mb-3">Actividad #{{ actividad.pk }}</h1>
 <dl class="row">
+    <dt class="col-sm-3">Fecha</dt>
+    <dd class="col-sm-9">{{ actividad.fecha|date:"d/m/Y" }}</dd>
+    <dt class="col-sm-3">Ítem</dt>
+    <dd class="col-sm-9">{{ actividad.get_item_display }}</dd>
     <dt class="col-sm-3">Solicitud / problema</dt>
     <dd class="col-sm-9">{{ actividad.solicitud_problema }}</dd>
     <dt class="col-sm-3">Acción realizada</dt>
     <dd class="col-sm-9">{{ actividad.accion_realizada }}</dd>
-    <dt class="col-sm-3">Fecha</dt>
-    <dd class="col-sm-9">{{ actividad.fecha }}</dd>
     <dt class="col-sm-3">Estado</dt>
     <dd class="col-sm-9"><span class="badge bg-secondary">{{ actividad.estado }}</span></dd>
 </dl>

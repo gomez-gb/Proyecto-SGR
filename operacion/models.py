@@ -18,10 +18,18 @@ class Perfil(models.Model):
 
 
 class Actividad(models.Model):
+    class Item(models.TextChoices):
+        ALUMBRADO_PUBLICO = "ALUMBRADO_PUBLICO", "Alumbrado público"
+        ATENCION_SOCIAL = "ATENCION_SOCIAL", "Atención social"
+        INFRAESTRUCTURA = "INFRAESTRUCTURA", "Infraestructura y mantención"
+        ASEO_ORNATO = "ASEO_ORNATO", "Aseo y ornato"
+        OTRO = "OTRO", "Otro"
+
     funcionario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="actividades")
-    fecha = models.DateTimeField(default=timezone.now)
-    solicitud_problema = models.CharField(max_length=255)
-    accion_realizada = models.TextField()
+    fecha = models.DateField(default=timezone.localdate)
+    item = models.CharField(max_length=30, choices=Item.choices)
+    solicitud_problema = models.TextField()
+    accion_realizada = models.CharField(max_length=255)
     contacto = models.CharField(max_length=150, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     servicio = models.CharField(max_length=100, blank=True)
@@ -29,7 +37,7 @@ class Actividad(models.Model):
     estado = models.CharField(max_length=30, default="registrada")
 
     def __str__(self):
-        return f"Actividad #{self.pk} — {self.solicitud_problema}"
+        return f"Actividad #{self.pk} — {self.solicitud_problema[:50]}"
 
 
 class Evidencia(models.Model):

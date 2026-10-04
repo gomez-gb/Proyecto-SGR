@@ -10,8 +10,8 @@ class PerfilAdmin(admin.ModelAdmin):
 
 @admin.register(Actividad)
 class ActividadAdmin(admin.ModelAdmin):
-    list_display = ("id", "funcionario", "fecha", "solicitud_problema", "estado")
-    list_filter = ("estado", "agenda_colectiva")
+    list_display = ("id", "funcionario", "fecha", "item", "estado")
+    list_filter = ("estado", "item", "agenda_colectiva")
 
 
 @admin.register(Evidencia)

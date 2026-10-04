@@ -22,9 +22,10 @@ class EstiloBootstrapMixin:
 class ActividadForm(EstiloBootstrapMixin, forms.ModelForm):
     class Meta:
         model = Actividad
-        fields = ["solicitud_problema", "accion_realizada", "contacto", "telefono", "servicio", "agenda_colectiva"]
+        fields = ["fecha", "item", "solicitud_problema", "accion_realizada", "contacto", "telefono", "agenda_colectiva"]
         widgets = {
-            "accion_realizada": forms.Textarea(attrs={"rows": 3}),
+            "fecha": forms.DateInput(attrs={"type": "date"}),
+            "solicitud_problema": forms.Textarea(attrs={"rows": 3}),
         }
 
 

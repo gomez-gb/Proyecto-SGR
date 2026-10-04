@@ -9,13 +9,14 @@
 <div class="table-responsive">
 <table class="table table-striped">
     <thead>
-        <tr><th>Fecha</th><th>Solicitud/problema</th><th>Estado</th><th>Evidencia</th><th></th></tr>
+        <tr><th>Fecha</th><th>Ítem</th><th>Solicitud/problema</th><th>Estado</th><th>Evidencia</th><th></th></tr>
     </thead>
     <tbody>
         {% for actividad in actividades %}
         <tr>
-            <td>{{ actividad.fecha|date:"d/m/Y H:i" }}</td>
-            <td>{{ actividad.solicitud_problema }}</td>
+            <td>{{ actividad.fecha|date:"d/m/Y" }}</td>
+            <td>{{ actividad.get_item_display }}</td>
+            <td>{{ actividad.solicitud_problema|truncatechars:60 }}</td>
             <td><span class="badge bg-secondary">{{ actividad.estado }}</span></td>
             <td>{{ actividad.evidencia.codigo|default:"—" }}</td>
             <td><a href="{% url 'operacion:detalle_actividad' actividad.pk %}">Ver</a></td>
