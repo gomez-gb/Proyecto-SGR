@@ -11,4 +11,6 @@ urlpatterns = [
     path("actividades/<int:pk>/evidencia/", views.subir_evidencia, name="subir_evidencia"),
     path("compromisos/", views.lista_compromisos, name="lista_compromisos"),
     path("compromisos/nuevo/", views.registrar_compromiso, name="registrar_compromiso"),
+    path("validaciones/", views.lista_pendientes_validacion, name="lista_pendientes_validacion"),
+    path("validaciones/<int:pk>/", views.validar_evidencia, name="validar_evidencia"),
 ]

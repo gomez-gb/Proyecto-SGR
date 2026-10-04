@@ -1,9 +1,24 @@
+from functools import wraps
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import ActividadForm, CompromisoForm, EvidenciaForm
-from .models import Actividad, Compromiso, Evidencia
+from .forms import ActividadForm, CompromisoForm, EvidenciaForm, ValidacionForm
+from .models import Actividad, Compromiso, Evidencia, Perfil
+
+
+def requiere_verificador(vista):
+    @wraps(vista)
+    @login_required
+    def envoltura(request, *args, **kwargs):
+        perfil = getattr(request.user, "perfil", None)
+        if not perfil or perfil.rol != Perfil.Rol.VERIFICADOR:
+            raise PermissionDenied("Esta acción requiere rol Verificador.")
+        return vista(request, *args, **kwargs)
+
+    return envoltura
 
 
 @login_required
@@ -71,3 +86,48 @@ def registrar_compromiso(request):
 def lista_compromisos(request):
     compromisos = Compromiso.objects.filter(responsable=request.user).order_by("fecha_compromiso")
     return render(request, "operacion/lista_compromisos.html", {"compromisos": compromisos})
+
+
+@requiere_verificador
+def lista_pendientes_validacion(request):
+    evidencias = (
+        Evidencia.objects.filter(estado_revision="pendiente")
+        .exclude(archivo="")
+        .select_related("actividad", "actividad__funcionario")
+        .order_by("fecha_registro")
+    )
+    return render(request, "operacion/lista_pendientes_validacion.html", {"evidencias": evidencias})
+
+
+@requiere_verificador
+def validar_evidencia(request, pk):
+    evidencia = get_object_or_404(Evidencia, pk=pk)
+    if not evidencia.archivo:
+        messages.error(request, "Esta evidencia todavía no tiene archivo adjunto.")
+        return redirect("operacion:lista_pendientes_validacion")
+
+    if request.method == "POST":
+        form = ValidacionForm(request.POST)
+        if form.is_valid():
+            validacion = form.save(commit=False)
+            validacion.evidencia = evidencia
+            validacion.verificador = request.user
+            validacion.save()
+
+            if validacion.decision == validacion.Decision.APROBADO:
+                evidencia.estado_revision = "aprobada"
+                evidencia.actividad.estado = "validada"
+            elif validacion.decision == validacion.Decision.RECHAZADO:
+                evidencia.estado_revision = "rechazada"
+                evidencia.actividad.estado = "rechazada"
+            else:
+                evidencia.estado_revision = "correccion_solicitada"
+                evidencia.actividad.estado = "correccion_solicitada"
+            evidencia.save()
+            evidencia.actividad.save()
+
+            messages.success(request, f"Evidencia {evidencia.codigo}: {validacion.get_decision_display()}.")
+            return redirect("operacion:lista_pendientes_validacion")
+    else:
+        form = ValidacionForm()
+    return render(request, "operacion/validar_evidencia.html", {"form": form, "evidencia": evidencia})

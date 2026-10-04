@@ -1,0 +1,27 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Evidencias pendientes{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Evidencias pendientes de validación</h1>
+{% if evidencias %}
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr><th>Código</th><th>Actividad</th><th>Funcionario</th><th>Registrada</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for evidencia in evidencias %}
+        <tr>
+            <td>{{ evidencia.codigo }}</td>
+            <td>{{ evidencia.actividad.solicitud_problema|truncatechars:50 }}</td>
+            <td>{{ evidencia.actividad.funcionario.username }}</td>
+            <td>{{ evidencia.fecha_registro|date:"d/m/Y H:i" }}</td>
+            <td><a class="btn btn-sm btn-primary" href="{% url 'operacion:validar_evidencia' evidencia.pk %}">Revisar</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">No hay evidencias pendientes de validación.</p>
+{% endif %}
+{% endblock %}

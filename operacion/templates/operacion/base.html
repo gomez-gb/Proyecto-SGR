@@ -14,6 +14,9 @@
         <div class="d-flex gap-3">
             <a class="nav-link text-light" href="{% url 'operacion:lista_actividades' %}">Actividades</a>
             <a class="nav-link text-light" href="{% url 'operacion:lista_compromisos' %}">Compromisos</a>
+            {% if user.perfil.rol == "VERIFICADOR" %}
+            <a class="nav-link text-light" href="{% url 'operacion:lista_pendientes_validacion' %}">Validaciones</a>
+            {% endif %}
             <span class="text-light">{{ user.username }}</span>
             <form method="post" action="{% url 'logout' %}" class="m-0">
                 {% csrf_token %}
@@ -25,7 +28,7 @@
 </nav>
 <main class="container pb-5">
     {% for message in messages %}
-    <div class="alert alert-info">{{ message }}</div>
+    <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
     {% endfor %}
     {% block contenido %}{% endblock %}
 </main>

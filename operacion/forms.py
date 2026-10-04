@@ -3,7 +3,7 @@ import datetime
 from django import forms
 from django.utils import timezone
 
-from .models import Actividad, Compromiso, Evidencia
+from .models import Actividad, Compromiso, Evidencia, Validacion
 
 EXTENSIONES_PERMITIDAS = ("jpg", "jpeg", "png", "pdf")
 TAMANO_MAXIMO_MB = 5
@@ -21,7 +21,7 @@ class EstiloBootstrapMixin:
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
+            if isinstance(widget, (forms.CheckboxInput, forms.RadioSelect)):
                 widget.attrs.setdefault("class", "form-check-input")
             else:
                 widget.attrs.setdefault("class", "form-control")
@@ -64,6 +64,24 @@ class EvidenciaForm(EstiloBootstrapMixin, forms.ModelForm):
         if archivo.size > TAMANO_MAXIMO_MB * 1024 * 1024:
             raise forms.ValidationError(f"El archivo supera el máximo de {TAMANO_MAXIMO_MB} MB.")
         return archivo
+
+
+class ValidacionForm(EstiloBootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = Validacion
+        fields = ["decision", "observacion"]
+        widgets = {
+            "decision": forms.RadioSelect,
+            "observacion": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        decision = cleaned_data.get("decision")
+        observacion = cleaned_data.get("observacion")
+        if decision in (Validacion.Decision.RECHAZADO, Validacion.Decision.SOLICITA_CORRECCION) and not observacion:
+            raise forms.ValidationError("Debes indicar una observación al rechazar o solicitar corrección.")
+        return cleaned_data
 
 
 class CompromisoForm(EstiloBootstrapMixin, forms.ModelForm):
