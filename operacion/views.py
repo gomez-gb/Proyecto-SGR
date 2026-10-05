@@ -30,34 +30,22 @@ def _requiere_rol(rol_requerido):
 
 requiere_funcionario = _requiere_rol(Perfil.Rol.FUNCIONARIO)
 requiere_verificador = _requiere_rol(Perfil.Rol.VERIFICADOR)
-
-
-def requiere_administrador(vista):
-    """'Auditoría de cambios' es un caso de uso de Administrador en el Diagrama de la U2.
-    No se modela un Perfil.Rol.ADMINISTRADOR nuevo (fuera del alcance del Sprint 2) — se
-    reutiliza is_staff, que ya distingue al único usuario de ese tipo (admin)."""
-
-    @wraps(vista)
-    @login_required
-    def envoltura(request, *args, **kwargs):
-        if not request.user.is_staff:
-            raise PermissionDenied("Esta acción requiere rol Administrador.")
-        return vista(request, *args, **kwargs)
-
-    return envoltura
+requiere_administrador = _requiere_rol(Perfil.Rol.ADMINISTRADOR)
 
 
 @login_required
 def inicio(request):
     perfil = getattr(request.user, "perfil", None)
     if not perfil:
-        # Un usuario sin Perfil (ej. el superusuario "admin") hace de
-        # Administrador (ver Auditoría) — no opera como Funcionario/Verificador.
+        # Un usuario sin Perfil (ej. el superusuario "admin") es de uso interno
+        # (Django admin, datos, pruebas) — no es un rol del prototipo en sí.
         if request.user.is_staff:
-            return redirect("operacion:historial_auditoria")
-        raise PermissionDenied("Tu usuario no tiene un rol asignado (Funcionario/Verificador). Contacta al administrador.")
+            return redirect("/admin/")
+        raise PermissionDenied("Tu usuario no tiene un rol asignado. Contacta al administrador.")
     if perfil.rol == Perfil.Rol.VERIFICADOR:
         return redirect("operacion:lista_pendientes_validacion")
+    if perfil.rol == Perfil.Rol.ADMINISTRADOR:
+        return redirect("operacion:historial_auditoria")
     return redirect("operacion:lista_actividades")
 
 

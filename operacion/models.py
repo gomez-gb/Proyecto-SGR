@@ -9,6 +9,7 @@ class Perfil(models.Model):
     class Rol(models.TextChoices):
         FUNCIONARIO = "FUNCIONARIO", "Funcionario"
         VERIFICADOR = "VERIFICADOR", "Verificador"
+        ADMINISTRADOR = "ADMINISTRADOR", "Administrador"
 
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
     rol = models.CharField(max_length=20, choices=Rol.choices, verbose_name="Rol")

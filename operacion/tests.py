@@ -178,13 +178,13 @@ class AgendaCompartidaTests(TestCase):
 
 
 class InicioRedirectTests(TestCase):
-    """Un usuario sin Perfil (ej. superusuario de /admin/) no debe caer en un 403 confuso."""
+    """Un usuario sin Perfil (ej. superusuario interno 'admin') no debe caer en un 403 confuso."""
 
-    def test_staff_sin_perfil_va_al_historial_de_auditoria(self):
+    def test_staff_sin_perfil_va_al_admin_de_django(self):
         staff = User.objects.create_user("staff_sin_perfil", password="x", is_staff=True)
         self.client.force_login(staff)
         respuesta = self.client.get(reverse("operacion:inicio"), follow=True)
-        self.assertEqual(respuesta.redirect_chain[-1][0], reverse("operacion:historial_auditoria"))
+        self.assertEqual(respuesta.redirect_chain[-1][0], "/admin/")
 
     def test_usuario_sin_perfil_ni_staff_recibe_403_explicado(self):
         usuario = User.objects.create_user("sin_rol", password="x")
@@ -192,12 +192,20 @@ class InicioRedirectTests(TestCase):
         respuesta = self.client.get(reverse("operacion:inicio"))
         self.assertEqual(respuesta.status_code, 403)
 
+    def test_administrador_va_al_historial_de_auditoria(self):
+        usuario = User.objects.create_user("inicio_admin_rol", password="x")
+        Perfil.objects.create(usuario=usuario, rol=Perfil.Rol.ADMINISTRADOR)
+        self.client.force_login(usuario)
+        respuesta = self.client.get(reverse("operacion:inicio"), follow=True)
+        self.assertEqual(respuesta.redirect_chain[-1][0], reverse("operacion:historial_auditoria"))
+
 
 class HistorialAuditoriaTests(TestCase):
-    """Pantalla propia del prototipo para 'Auditoría de cambios' (Administrador) — no el admin de Django."""
+    """Pantalla propia del prototipo para 'Auditoría de cambios' (rol Administrador) — no el admin de Django."""
 
     def setUp(self):
-        self.staff = User.objects.create_user("auditor_staff", password="x", is_staff=True)
+        self.administrador = User.objects.create_user("auditor_admin", password="x")
+        Perfil.objects.create(usuario=self.administrador, rol=Perfil.Rol.ADMINISTRADOR)
         self.funcionario = User.objects.create_user("auditor_func", password="x")
         Perfil.objects.create(usuario=self.funcionario, rol=Perfil.Rol.FUNCIONARIO)
         Auditoria.objects.create(
@@ -209,11 +217,18 @@ class HistorialAuditoriaTests(TestCase):
             valor_nuevo="registrada",
         )
 
-    def test_staff_ve_el_historial(self):
-        self.client.force_login(self.staff)
+    def test_administrador_ve_el_historial(self):
+        self.client.force_login(self.administrador)
         respuesta = self.client.get(reverse("operacion:historial_auditoria"))
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "auditor_func")
+
+    def test_staff_interno_sin_rol_administrador_no_accede(self):
+        # 'admin' es de uso interno, no sustituye al rol Administrador del prototipo
+        staff_interno = User.objects.create_user("staff_interno", password="x", is_staff=True)
+        self.client.force_login(staff_interno)
+        respuesta = self.client.get(reverse("operacion:historial_auditoria"))
+        self.assertEqual(respuesta.status_code, 403)
 
     def test_funcionario_no_accede_al_historial(self):
         self.client.force_login(self.funcionario)

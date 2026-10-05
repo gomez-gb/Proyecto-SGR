@@ -18,8 +18,7 @@
             <a class="nav-link text-light" href="{% url 'operacion:agenda_compartida' %}">Agenda compartida</a>
             {% elif user.perfil.rol == "VERIFICADOR" %}
             <a class="nav-link text-light" href="{% url 'operacion:lista_pendientes_validacion' %}">Validaciones</a>
-            {% endif %}
-            {% if user.is_staff %}
+            {% elif user.perfil.rol == "ADMINISTRADOR" %}
             <a class="nav-link text-light" href="{% url 'operacion:historial_auditoria' %}">Auditoría</a>
             {% endif %}
             <span class="text-light">{{ user.username }}</span>
