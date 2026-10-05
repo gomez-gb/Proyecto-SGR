@@ -15,6 +15,7 @@
             {% if user.perfil.rol == "FUNCIONARIO" %}
             <a class="nav-link text-light" href="{% url 'operacion:lista_actividades' %}">Actividades</a>
             <a class="nav-link text-light" href="{% url 'operacion:lista_compromisos' %}">Compromisos</a>
+            <a class="nav-link text-light" href="{% url 'operacion:agenda_compartida' %}">Agenda compartida</a>
             {% elif user.perfil.rol == "VERIFICADOR" %}
             <a class="nav-link text-light" href="{% url 'operacion:lista_pendientes_validacion' %}">Validaciones</a>
             {% endif %}

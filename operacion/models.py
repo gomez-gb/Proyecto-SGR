@@ -95,3 +95,35 @@ class Compromiso(models.Model):
 
     def __str__(self):
         return f"Compromiso #{self.pk} — {self.descripcion}"
+
+
+class Auditoria(models.Model):
+    """Trazabilidad de cambios (RF-036, RNF-008, Ley 21459) — ya estaba en el Diagrama de Clases de la U2."""
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Usuario")
+    evento = models.CharField(max_length=100, verbose_name="Evento")
+    origen = models.CharField(max_length=50, verbose_name="Origen")
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+    entidad_afectada = models.CharField(max_length=50, verbose_name="Entidad afectada")
+    id_registro = models.CharField(max_length=20, verbose_name="ID del registro")
+    valor_anterior = models.CharField(max_length=255, blank=True, verbose_name="Valor anterior")
+    valor_nuevo = models.CharField(max_length=255, blank=True, verbose_name="Valor nuevo")
+
+    class Meta:
+        verbose_name_plural = "Auditorías"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.fecha:%d/%m/%Y %H:%M} — {self.evento} ({self.entidad_afectada} #{self.id_registro})"
+
+
+def registrar_evento(usuario, evento, origen, entidad_afectada, id_registro, valor_anterior="", valor_nuevo=""):
+    return Auditoria.objects.create(
+        usuario=usuario,
+        evento=evento,
+        origen=origen,
+        entidad_afectada=entidad_afectada,
+        id_registro=str(id_registro),
+        valor_anterior=str(valor_anterior),
+        valor_nuevo=str(valor_nuevo),
+    )

@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Actividad, Evidencia, Perfil
+from .models import Actividad, Auditoria, Compromiso, Evidencia, Perfil
 
 
 def _archivo_jpg(nombre="evidencia.jpg"):
@@ -119,3 +119,59 @@ class ValidarEvidenciaTests(TestCase):
         self.actividad.refresh_from_db()
         self.assertEqual(self.evidencia.estado_revision, "aprobada")
         self.assertEqual(self.actividad.estado, "validada")
+
+    def test_aprobar_registra_auditoria(self):
+        self.client.force_login(self.verificador)
+        self.client.post(
+            reverse("operacion:validar_evidencia", args=[self.evidencia.pk]),
+            {"decision": "APROBADO", "observacion": ""},
+        )
+        evento = Auditoria.objects.filter(entidad_afectada="Evidencia", id_registro=str(self.evidencia.pk)).first()
+        self.assertIsNotNone(evento)
+        self.assertEqual(evento.valor_nuevo, "aprobada")
+
+
+class AgendaCompartidaTests(TestCase):
+    """HU-12 (agenda compartida), HU-13 (cambio de estado con historial), HU-14 (seguimiento)."""
+
+    def setUp(self):
+        self.func1 = User.objects.create_user("agenda_func1", password="x")
+        Perfil.objects.create(usuario=self.func1, rol=Perfil.Rol.FUNCIONARIO)
+        self.func2 = User.objects.create_user("agenda_func2", password="x")
+        Perfil.objects.create(usuario=self.func2, rol=Perfil.Rol.FUNCIONARIO)
+
+        self.compromiso_ajeno = Compromiso.objects.create(
+            responsable=self.func2,
+            descripcion="Compromiso de otro funcionario",
+            solicitante="Vecino",
+            fecha_compromiso=datetime.date(2026, 10, 10),
+        )
+
+    def test_agenda_compartida_muestra_compromisos_de_todos(self):
+        self.client.force_login(self.func1)
+        respuesta = self.client.get(reverse("operacion:agenda_compartida"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Compromiso de otro funcionario")
+
+    def test_cambiar_estado_de_compromiso_ajeno_y_queda_auditado(self):
+        self.client.force_login(self.func1)
+        respuesta = self.client.post(
+            reverse("operacion:actualizar_estado_compromiso", args=[self.compromiso_ajeno.pk]),
+            {"estado": "EN_PROCESO"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.compromiso_ajeno.refresh_from_db()
+        self.assertEqual(self.compromiso_ajeno.estado, "EN_PROCESO")
+
+        evento = Auditoria.objects.filter(entidad_afectada="Compromiso", id_registro=str(self.compromiso_ajeno.pk)).first()
+        self.assertIsNotNone(evento)
+        self.assertEqual(evento.usuario, self.func1)
+        self.assertEqual(evento.valor_anterior, "INGRESADO")
+        self.assertEqual(evento.valor_nuevo, "EN_PROCESO")
+
+    def test_verificador_no_accede_a_agenda_compartida(self):
+        verificador = User.objects.create_user("agenda_verif", password="x")
+        Perfil.objects.create(usuario=verificador, rol=Perfil.Rol.VERIFICADOR)
+        self.client.force_login(verificador)
+        respuesta = self.client.get(reverse("operacion:agenda_compartida"))
+        self.assertEqual(respuesta.status_code, 403)

@@ -1,3 +1,4 @@
+import datetime
 from functools import wraps
 
 from django.contrib import messages
@@ -6,9 +7,10 @@ from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from .forms import ActividadForm, CompromisoForm, EvidenciaForm, ValidacionForm
-from .models import Actividad, Compromiso, Evidencia, Perfil
+from .models import Actividad, Compromiso, Evidencia, Perfil, registrar_evento
 
 
 def _requiere_rol(rol_requerido):
@@ -55,6 +57,14 @@ def registrar_actividad(request):
             evidencia.actividad = actividad
             evidencia.estado_revision = "pendiente"
             evidencia.save()
+            registrar_evento(
+                usuario=request.user,
+                evento="alta",
+                origen="registrar_actividad",
+                entidad_afectada="Actividad",
+                id_registro=actividad.pk,
+                valor_nuevo=actividad.estado,
+            )
             destino = reverse("operacion:detalle_actividad", args=[actividad.pk])
             if _es_ajax(request):
                 return JsonResponse({"redirect": destino})
@@ -127,6 +137,61 @@ def lista_compromisos(request):
     return render(request, "operacion/lista_compromisos.html", {"compromisos": compromisos})
 
 
+@requiere_funcionario
+def agenda_compartida(request):
+    """HU-12 (agenda compartida) + HU-14 (seguimiento): todos los compromisos, no solo los propios."""
+    compromisos = Compromiso.objects.select_related("responsable").order_by("fecha_compromiso")
+
+    estado = request.GET.get("estado")
+    if estado:
+        compromisos = compromisos.filter(estado=estado)
+
+    hoy = timezone.localdate()
+    proximos_dias = 3
+    resumen = {
+        "pendientes": compromisos.exclude(estado=Compromiso.Estado.REALIZADO).count(),
+        "proximos_a_vencer": compromisos.filter(
+            fecha_compromiso__gte=hoy,
+            fecha_compromiso__lte=hoy + datetime.timedelta(days=proximos_dias),
+        )
+        .exclude(estado=Compromiso.Estado.REALIZADO)
+        .count(),
+        "vencidos": compromisos.filter(fecha_compromiso__lt=hoy).exclude(estado=Compromiso.Estado.REALIZADO).count(),
+    }
+    return render(
+        request,
+        "operacion/agenda_compartida.html",
+        {"compromisos": compromisos, "resumen": resumen, "estados": Compromiso.Estado.choices, "estado_filtro": estado},
+    )
+
+
+@requiere_funcionario
+def actualizar_estado_compromiso(request, pk):
+    """HU-13: transición controlada de estados, con historial en Auditoria."""
+    compromiso = get_object_or_404(Compromiso, pk=pk)
+    if request.method == "POST":
+        nuevo_estado = request.POST.get("estado")
+        estados_validos = dict(Compromiso.Estado.choices)
+        if nuevo_estado in estados_validos:
+            estado_anterior = compromiso.estado
+            if estado_anterior != nuevo_estado:
+                compromiso.estado = nuevo_estado
+                compromiso.save()
+                registrar_evento(
+                    usuario=request.user,
+                    evento="cambio_estado",
+                    origen="actualizar_estado_compromiso",
+                    entidad_afectada="Compromiso",
+                    id_registro=compromiso.pk,
+                    valor_anterior=estado_anterior,
+                    valor_nuevo=nuevo_estado,
+                )
+                messages.success(request, f"Compromiso #{compromiso.pk}: {estados_validos[nuevo_estado]}.")
+        else:
+            messages.error(request, "Estado inválido.")
+    return redirect("operacion:agenda_compartida")
+
+
 @requiere_verificador
 def lista_pendientes_validacion(request):
     evidencias = (
@@ -148,6 +213,7 @@ def validar_evidencia(request, pk):
     if request.method == "POST":
         form = ValidacionForm(request.POST)
         if form.is_valid():
+            estado_anterior = evidencia.estado_revision
             validacion = form.save(commit=False)
             validacion.evidencia = evidencia
             validacion.verificador = request.user
@@ -164,6 +230,15 @@ def validar_evidencia(request, pk):
                 evidencia.actividad.estado = "correccion_solicitada"
             evidencia.save()
             evidencia.actividad.save()
+            registrar_evento(
+                usuario=request.user,
+                evento="validacion",
+                origen="validar_evidencia",
+                entidad_afectada="Evidencia",
+                id_registro=evidencia.pk,
+                valor_anterior=estado_anterior,
+                valor_nuevo=evidencia.estado_revision,
+            )
 
             messages.success(request, f"Evidencia {evidencia.codigo}: {validacion.get_decision_display()}.")
             return redirect("operacion:lista_pendientes_validacion")

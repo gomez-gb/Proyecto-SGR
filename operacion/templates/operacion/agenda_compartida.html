@@ -1,0 +1,72 @@
+{% extends "operacion/base.html" %}
+{% block titulo %}Agenda compartida{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Agenda compartida de compromisos</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="border rounded p-3 text-center">
+            <div class="h3 m-0">{{ resumen.pendientes }}</div>
+            <div class="text-muted small">Pendientes</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="border rounded p-3 text-center">
+            <div class="h3 m-0 text-warning">{{ resumen.proximos_a_vencer }}</div>
+            <div class="text-muted small">Próximos a vencer (3 días)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="border rounded p-3 text-center">
+            <div class="h3 m-0 text-danger">{{ resumen.vencidos }}</div>
+            <div class="text-muted small">Vencidos</div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="mb-3 d-flex gap-2 align-items-end">
+    <div>
+        <label class="form-label small">Filtrar por estado</label>
+        <select name="estado" class="form-control" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for valor, etiqueta in estados %}
+            <option value="{{ valor }}" {% if estado_filtro == valor %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+
+{% if compromisos %}
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr><th>Fecha</th><th>Descripción</th><th>Responsable</th><th>Territorio</th><th>Estado</th><th>Cambiar estado</th></tr>
+    </thead>
+    <tbody>
+        {% for compromiso in compromisos %}
+        <tr class="{% if compromiso.esta_vencido %}table-danger{% endif %}">
+            <td>{{ compromiso.fecha_compromiso|date:"d/m/Y" }}</td>
+            <td>{{ compromiso.descripcion|truncatechars:50 }}</td>
+            <td>{{ compromiso.responsable.username }}</td>
+            <td>{{ compromiso.territorio }}</td>
+            <td><span class="badge bg-secondary">{{ compromiso.get_estado_display }}</span></td>
+            <td>
+                <form method="post" action="{% url 'operacion:actualizar_estado_compromiso' compromiso.pk %}" class="d-flex gap-1">
+                    {% csrf_token %}
+                    <select name="estado" class="form-control form-control-sm">
+                        {% for valor, etiqueta in estados %}
+                        <option value="{{ valor }}" {% if compromiso.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">No hay compromisos registrados.</p>
+{% endif %}
+{% endblock %}

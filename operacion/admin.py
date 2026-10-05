@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Actividad, Compromiso, Evidencia, Perfil, Validacion
+from .models import Actividad, Auditoria, Compromiso, Evidencia, Perfil, Validacion
 
 
 @admin.register(Perfil)
@@ -31,3 +31,19 @@ class ValidacionAdmin(admin.ModelAdmin):
 class CompromisoAdmin(admin.ModelAdmin):
     list_display = ("id", "descripcion", "responsable", "estado", "fecha_compromiso")
     list_filter = ("estado",)
+
+
+@admin.register(Auditoria)
+class AuditoriaAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "usuario", "evento", "entidad_afectada", "id_registro", "valor_anterior", "valor_nuevo")
+    list_filter = ("evento", "entidad_afectada")
+    readonly_fields = [f.name for f in Auditoria._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
