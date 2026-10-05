@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import ActividadForm, CompromisoForm, EvidenciaForm, ValidacionForm
-from .models import Actividad, Compromiso, Evidencia, Perfil, registrar_evento
+from .models import Actividad, Auditoria, Compromiso, Evidencia, Perfil, registrar_evento
 
 
 def _requiere_rol(rol_requerido):
@@ -32,14 +32,29 @@ requiere_funcionario = _requiere_rol(Perfil.Rol.FUNCIONARIO)
 requiere_verificador = _requiere_rol(Perfil.Rol.VERIFICADOR)
 
 
+def requiere_administrador(vista):
+    """'Auditoría de cambios' es un caso de uso de Administrador en el Diagrama de la U2.
+    No se modela un Perfil.Rol.ADMINISTRADOR nuevo (fuera del alcance del Sprint 2) — se
+    reutiliza is_staff, que ya distingue al único usuario de ese tipo (admin)."""
+
+    @wraps(vista)
+    @login_required
+    def envoltura(request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied("Esta acción requiere rol Administrador.")
+        return vista(request, *args, **kwargs)
+
+    return envoltura
+
+
 @login_required
 def inicio(request):
     perfil = getattr(request.user, "perfil", None)
     if not perfil:
-        # Un usuario sin Perfil (ej. el superusuario "admin") no opera la
-        # app como Funcionario/Verificador — su lugar es el panel de admin.
+        # Un usuario sin Perfil (ej. el superusuario "admin") hace de
+        # Administrador (ver Auditoría) — no opera como Funcionario/Verificador.
         if request.user.is_staff:
-            return redirect("/admin/")
+            return redirect("operacion:historial_auditoria")
         raise PermissionDenied("Tu usuario no tiene un rol asignado (Funcionario/Verificador). Contacta al administrador.")
     if perfil.rol == Perfil.Rol.VERIFICADOR:
         return redirect("operacion:lista_pendientes_validacion")
@@ -251,3 +266,20 @@ def validar_evidencia(request, pk):
     else:
         form = ValidacionForm()
     return render(request, "operacion/validar_evidencia.html", {"form": form, "evidencia": evidencia})
+
+
+@requiere_administrador
+def historial_auditoria(request):
+    """'Auditoría de cambios' (Administrador) — Ley 21459 / RF-036 / RNF-008."""
+    eventos = Auditoria.objects.select_related("usuario")
+
+    entidad = request.GET.get("entidad")
+    if entidad:
+        eventos = eventos.filter(entidad_afectada=entidad)
+
+    entidades_disponibles = Auditoria.objects.values_list("entidad_afectada", flat=True).distinct().order_by("entidad_afectada")
+    return render(
+        request,
+        "operacion/historial_auditoria.html",
+        {"eventos": eventos, "entidades_disponibles": entidades_disponibles, "entidad_filtro": entidad},
+    )

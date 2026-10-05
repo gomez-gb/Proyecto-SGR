@@ -16,4 +16,5 @@ urlpatterns = [
     path("compromisos/<int:pk>/estado/", views.actualizar_estado_compromiso, name="actualizar_estado_compromiso"),
     path("validaciones/", views.lista_pendientes_validacion, name="lista_pendientes_validacion"),
     path("validaciones/<int:pk>/", views.validar_evidencia, name="validar_evidencia"),
+    path("auditoria/", views.historial_auditoria, name="historial_auditoria"),
 ]

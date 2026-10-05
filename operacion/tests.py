@@ -180,14 +180,42 @@ class AgendaCompartidaTests(TestCase):
 class InicioRedirectTests(TestCase):
     """Un usuario sin Perfil (ej. superusuario de /admin/) no debe caer en un 403 confuso."""
 
-    def test_staff_sin_perfil_va_a_admin(self):
+    def test_staff_sin_perfil_va_al_historial_de_auditoria(self):
         staff = User.objects.create_user("staff_sin_perfil", password="x", is_staff=True)
         self.client.force_login(staff)
         respuesta = self.client.get(reverse("operacion:inicio"), follow=True)
-        self.assertEqual(respuesta.redirect_chain[-1][0], "/admin/")
+        self.assertEqual(respuesta.redirect_chain[-1][0], reverse("operacion:historial_auditoria"))
 
     def test_usuario_sin_perfil_ni_staff_recibe_403_explicado(self):
         usuario = User.objects.create_user("sin_rol", password="x")
         self.client.force_login(usuario)
         respuesta = self.client.get(reverse("operacion:inicio"))
+        self.assertEqual(respuesta.status_code, 403)
+
+
+class HistorialAuditoriaTests(TestCase):
+    """Pantalla propia del prototipo para 'Auditoría de cambios' (Administrador) — no el admin de Django."""
+
+    def setUp(self):
+        self.staff = User.objects.create_user("auditor_staff", password="x", is_staff=True)
+        self.funcionario = User.objects.create_user("auditor_func", password="x")
+        Perfil.objects.create(usuario=self.funcionario, rol=Perfil.Rol.FUNCIONARIO)
+        Auditoria.objects.create(
+            usuario=self.funcionario,
+            evento="alta",
+            origen="test",
+            entidad_afectada="Actividad",
+            id_registro="1",
+            valor_nuevo="registrada",
+        )
+
+    def test_staff_ve_el_historial(self):
+        self.client.force_login(self.staff)
+        respuesta = self.client.get(reverse("operacion:historial_auditoria"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "auditor_func")
+
+    def test_funcionario_no_accede_al_historial(self):
+        self.client.force_login(self.funcionario)
+        respuesta = self.client.get(reverse("operacion:historial_auditoria"))
         self.assertEqual(respuesta.status_code, 403)
