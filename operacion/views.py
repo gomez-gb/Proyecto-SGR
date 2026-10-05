@@ -35,7 +35,13 @@ requiere_verificador = _requiere_rol(Perfil.Rol.VERIFICADOR)
 @login_required
 def inicio(request):
     perfil = getattr(request.user, "perfil", None)
-    if perfil and perfil.rol == Perfil.Rol.VERIFICADOR:
+    if not perfil:
+        # Un usuario sin Perfil (ej. el superusuario "admin") no opera la
+        # app como Funcionario/Verificador — su lugar es el panel de admin.
+        if request.user.is_staff:
+            return redirect("/admin/")
+        raise PermissionDenied("Tu usuario no tiene un rol asignado (Funcionario/Verificador). Contacta al administrador.")
+    if perfil.rol == Perfil.Rol.VERIFICADOR:
         return redirect("operacion:lista_pendientes_validacion")
     return redirect("operacion:lista_actividades")
 

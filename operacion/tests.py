@@ -175,3 +175,19 @@ class AgendaCompartidaTests(TestCase):
         self.client.force_login(verificador)
         respuesta = self.client.get(reverse("operacion:agenda_compartida"))
         self.assertEqual(respuesta.status_code, 403)
+
+
+class InicioRedirectTests(TestCase):
+    """Un usuario sin Perfil (ej. superusuario de /admin/) no debe caer en un 403 confuso."""
+
+    def test_staff_sin_perfil_va_a_admin(self):
+        staff = User.objects.create_user("staff_sin_perfil", password="x", is_staff=True)
+        self.client.force_login(staff)
+        respuesta = self.client.get(reverse("operacion:inicio"), follow=True)
+        self.assertEqual(respuesta.redirect_chain[-1][0], "/admin/")
+
+    def test_usuario_sin_perfil_ni_staff_recibe_403_explicado(self):
+        usuario = User.objects.create_user("sin_rol", password="x")
+        self.client.force_login(usuario)
+        respuesta = self.client.get(reverse("operacion:inicio"))
+        self.assertEqual(respuesta.status_code, 403)
