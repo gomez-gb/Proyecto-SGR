@@ -4,7 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -271,3 +271,19 @@ def historial_auditoria(request):
         "operacion/historial_auditoria.html",
         {"eventos": eventos, "entidades_disponibles": entidades_disponibles, "entidad_filtro": entidad},
     )
+
+
+@login_required
+def ver_evidencia_archivo(request, pk):
+    """Sirve el archivo de evidencia solo a usuarios autorizados (OWASP A01: Broken Access
+    Control) — el funcionario dueño, cualquier Verificador o cualquier Administrador. Antes
+    el archivo se servía directo por /media/, sin ningún control de acceso."""
+    evidencia = get_object_or_404(Evidencia, pk=pk)
+    perfil = getattr(request.user, "perfil", None)
+    es_dueno = evidencia.actividad.funcionario_id == request.user.id
+    tiene_rol_autorizado = perfil and perfil.rol in (Perfil.Rol.VERIFICADOR, Perfil.Rol.ADMINISTRADOR)
+    if not (es_dueno or tiene_rol_autorizado):
+        raise PermissionDenied("No tienes permiso para ver esta evidencia.")
+    if not evidencia.archivo:
+        raise Http404("Esta evidencia no tiene archivo adjunto.")
+    return FileResponse(evidencia.archivo.open("rb"), filename=evidencia.archivo.name.rsplit("/", 1)[-1])

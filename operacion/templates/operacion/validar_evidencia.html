@@ -14,7 +14,7 @@
     <dt class="col-sm-3">Acción realizada</dt>
     <dd class="col-sm-9">{{ evidencia.actividad.accion_realizada }}</dd>
     <dt class="col-sm-3">Archivo</dt>
-    <dd class="col-sm-9"><a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener">Ver archivo adjunto</a></dd>
+    <dd class="col-sm-9"><a href="{% url 'operacion:ver_evidencia_archivo' evidencia.pk %}" target="_blank" rel="noopener">Ver archivo adjunto</a></dd>
 </dl>
 <hr>
 <form method="post" novalidate>

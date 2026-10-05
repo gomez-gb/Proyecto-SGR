@@ -10,6 +10,7 @@ urlpatterns = [
     path("actividades/nueva/", views.registrar_actividad, name="registrar_actividad"),
     path("actividades/<int:pk>/", views.detalle_actividad, name="detalle_actividad"),
     path("actividades/<int:pk>/evidencia/", views.subir_evidencia, name="subir_evidencia"),
+    path("evidencias/<int:pk>/archivo/", views.ver_evidencia_archivo, name="ver_evidencia_archivo"),
     path("compromisos/", views.lista_compromisos, name="lista_compromisos"),
     path("compromisos/nuevo/", views.registrar_compromiso, name="registrar_compromiso"),
     path("compromisos/agenda/", views.agenda_compartida, name="agenda_compartida"),

@@ -20,7 +20,7 @@
 <p>Código verificador: <strong>{{ evidencia.codigo }}</strong></p>
 {% if evidencia.archivo %}
 <p>Estado de revisión: <span class="badge bg-warning text-dark">{{ evidencia.estado_revision }}</span></p>
-<a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener">Ver archivo adjunto</a>
+<a href="{% url 'operacion:ver_evidencia_archivo' evidencia.pk %}" target="_blank" rel="noopener">Ver archivo adjunto</a>
 {% if evidencia.estado_revision == "correccion_solicitada" %}
 <div class="mt-2">
     <a class="btn btn-warning btn-sm" href="{% url 'operacion:subir_evidencia' actividad.pk %}">Adjuntar evidencia corregida</a>

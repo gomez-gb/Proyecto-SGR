@@ -234,3 +234,43 @@ class HistorialAuditoriaTests(TestCase):
         self.client.force_login(self.funcionario)
         respuesta = self.client.get(reverse("operacion:historial_auditoria"))
         self.assertEqual(respuesta.status_code, 403)
+
+
+class VerEvidenciaArchivoTests(TestCase):
+    """OWASP A01 (Broken Access Control): el archivo de evidencia no debe ser publico."""
+
+    def setUp(self):
+        self.dueno = User.objects.create_user("owasp_dueno", password="x")
+        Perfil.objects.create(usuario=self.dueno, rol=Perfil.Rol.FUNCIONARIO)
+        self.otro_funcionario = User.objects.create_user("owasp_otro", password="x")
+        Perfil.objects.create(usuario=self.otro_funcionario, rol=Perfil.Rol.FUNCIONARIO)
+        self.verificador = User.objects.create_user("owasp_verif", password="x")
+        Perfil.objects.create(usuario=self.verificador, rol=Perfil.Rol.VERIFICADOR)
+
+        actividad = Actividad.objects.create(
+            funcionario=self.dueno,
+            fecha=datetime.date(2026, 10, 4),
+            item=Actividad.Item.OTRO,
+            solicitud_problema="x",
+            accion_realizada="x",
+        )
+        self.evidencia = Evidencia.objects.create(actividad=actividad, archivo=_archivo_jpg(), estado_revision="pendiente")
+
+    def test_anonimo_no_puede_ver_el_archivo(self):
+        respuesta = self.client.get(reverse("operacion:ver_evidencia_archivo", args=[self.evidencia.pk]))
+        self.assertEqual(respuesta.status_code, 302)  # redirige a login
+
+    def test_dueno_si_puede_ver_el_archivo(self):
+        self.client.force_login(self.dueno)
+        respuesta = self.client.get(reverse("operacion:ver_evidencia_archivo", args=[self.evidencia.pk]))
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_verificador_si_puede_ver_el_archivo(self):
+        self.client.force_login(self.verificador)
+        respuesta = self.client.get(reverse("operacion:ver_evidencia_archivo", args=[self.evidencia.pk]))
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_otro_funcionario_no_puede_ver_el_archivo_ajeno(self):
+        self.client.force_login(self.otro_funcionario)
+        respuesta = self.client.get(reverse("operacion:ver_evidencia_archivo", args=[self.evidencia.pk]))
+        self.assertEqual(respuesta.status_code, 403)
