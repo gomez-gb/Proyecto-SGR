@@ -13,6 +13,10 @@ class Perfil(models.Model):
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
     rol = models.CharField(max_length=20, choices=Rol.choices, verbose_name="Rol")
 
+    class Meta:
+        verbose_name = "Perfil"
+        verbose_name_plural = "Perfiles"
+
     def __str__(self):
         return f"{self.usuario.get_username()} ({self.get_rol_display()})"
 
@@ -36,6 +40,10 @@ class Actividad(models.Model):
     agenda_colectiva = models.BooleanField(default=False, verbose_name="Relacionar con agenda colectiva")
     estado = models.CharField(max_length=30, default="registrada", verbose_name="Estado")
 
+    class Meta:
+        verbose_name = "Actividad"
+        verbose_name_plural = "Actividades"
+
     def __str__(self):
         return f"Actividad #{self.pk} — {self.solicitud_problema[:50]}"
 
@@ -53,6 +61,10 @@ class Evidencia(models.Model):
             self.codigo = uuid.uuid4().hex[:12].upper()
         super().save(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "Evidencia"
+        verbose_name_plural = "Evidencias"
+
     def __str__(self):
         return f"Evidencia {self.codigo}"
 
@@ -68,6 +80,10 @@ class Validacion(models.Model):
     decision = models.CharField(max_length=25, choices=Decision.choices, verbose_name="Decisión")
     observacion = models.TextField(blank=True, verbose_name="Observación")
     fecha_validacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de validación")
+
+    class Meta:
+        verbose_name = "Validación"
+        verbose_name_plural = "Validaciones"
 
     def __str__(self):
         return f"Validación de {self.evidencia.codigo} — {self.get_decision_display()}"
@@ -90,6 +106,10 @@ class Compromiso(models.Model):
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.INGRESADO, verbose_name="Estado")
     observacion = models.TextField(blank=True, verbose_name="Observación")
 
+    class Meta:
+        verbose_name = "Compromiso"
+        verbose_name_plural = "Compromisos"
+
     def esta_vencido(self):
         return self.estado != self.Estado.REALIZADO and self.fecha_compromiso < timezone.now().date()
 
@@ -110,6 +130,7 @@ class Auditoria(models.Model):
     valor_nuevo = models.CharField(max_length=255, blank=True, verbose_name="Valor nuevo")
 
     class Meta:
+        verbose_name = "Auditoría"
         verbose_name_plural = "Auditorías"
         ordering = ["-fecha"]
 
