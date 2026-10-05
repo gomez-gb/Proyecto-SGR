@@ -3,7 +3,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Actividad, Auditoria, Compromiso, Evidencia, Perfil
@@ -274,3 +274,15 @@ class VerEvidenciaArchivoTests(TestCase):
         self.client.force_login(self.otro_funcionario)
         respuesta = self.client.get(reverse("operacion:ver_evidencia_archivo", args=[self.evidencia.pk]))
         self.assertEqual(respuesta.status_code, 403)
+
+
+class ManejoDeErroresTests(TestCase):
+    """OWASP: los errores no deben revelar detalles internos del sistema con DEBUG=False."""
+
+    @override_settings(DEBUG=False)
+    def test_404_no_revela_traceback_ni_version(self):
+        respuesta = self.client.get("/ruta-que-no-existe/")
+        self.assertEqual(respuesta.status_code, 404)
+        contenido = respuesta.content.decode()
+        self.assertNotIn("Traceback", contenido)
+        self.assertNotIn("django-insecure", contenido)
