@@ -99,6 +99,7 @@ class CompromisoForm(EstiloBootstrapMixin, forms.ModelForm):
         model = Compromiso
         fields = ["descripcion", "solicitante", "territorio", "area_apoyo", "origen", "fecha_compromiso"]
         widgets = {
+            "descripcion": forms.Textarea(attrs={"rows": 2}),
             "fecha_compromiso": _widget_fecha(
                 timezone.localdate() - datetime.timedelta(days=30),
                 timezone.localdate() + datetime.timedelta(days=730),
