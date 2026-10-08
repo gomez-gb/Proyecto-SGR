@@ -29,6 +29,13 @@ class RegistrarActividadTests(TestCase):
             "telefono": "",
         }
 
+    def test_formulario_no_tiene_opcion_en_blanco_en_item(self):
+        # Mismo patron que ValidacionForm.decision: ChoiceField sin default
+        # genera "- Select an option -" salvo que se declare explicito.
+        respuesta = self.client.get(reverse("operacion:registrar_actividad"))
+        self.assertNotContains(respuesta, "Select an option")
+        self.assertContains(respuesta, 'value="ALUMBRADO_PUBLICO"')
+
     def test_registro_valido_crea_actividad_y_evidencia(self):
         respuesta = self.client.post(
             reverse("operacion:registrar_actividad"),

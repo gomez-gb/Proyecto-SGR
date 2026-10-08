@@ -9,35 +9,73 @@
         <div class="col-md-7">
             <fieldset class="mb-4">
                 <legend class="h6">Actividad</legend>
-                {% for field in actividad_form %}
-                <div class="mb-3">
-                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    <div class="invalid-feedback d-block text-danger small" data-errores-de="{{ field.name }}">
-                        {% for error in field.errors %}{{ error }}{% endfor %}
+
+                <div class="row">
+                    <div class="col-sm-6 mb-3">
+                        <label class="form-label" for="{{ actividad_form.fecha.id_for_label }}">{{ actividad_form.fecha.label }}</label>
+                        {{ actividad_form.fecha }}
+                        <div class="invalid-feedback d-block text-danger small" data-errores-de="fecha">{% for error in actividad_form.fecha.errors %}{{ error }}{% endfor %}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <label class="form-label" for="{{ actividad_form.item.id_for_label }}">{{ actividad_form.item.label }}</label>
+                        {{ actividad_form.item }}
+                        <div class="invalid-feedback d-block text-danger small" data-errores-de="item">{% for error in actividad_form.item.errors %}{{ error }}{% endfor %}</div>
                     </div>
                 </div>
-                {% endfor %}
+
+                <div class="mb-3">
+                    <label class="form-label" for="{{ actividad_form.solicitud_problema.id_for_label }}">{{ actividad_form.solicitud_problema.label }}</label>
+                    {{ actividad_form.solicitud_problema }}
+                    <div class="invalid-feedback d-block text-danger small" data-errores-de="solicitud_problema">{% for error in actividad_form.solicitud_problema.errors %}{{ error }}{% endfor %}</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="{{ actividad_form.accion_realizada.id_for_label }}">{{ actividad_form.accion_realizada.label }}</label>
+                    {{ actividad_form.accion_realizada }}
+                    <div class="invalid-feedback d-block text-danger small" data-errores-de="accion_realizada">{% for error in actividad_form.accion_realizada.errors %}{{ error }}{% endfor %}</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6 mb-3">
+                        <label class="form-label" for="{{ actividad_form.contacto.id_for_label }}">{{ actividad_form.contacto.label }}</label>
+                        {{ actividad_form.contacto }}
+                        <div class="invalid-feedback d-block text-danger small" data-errores-de="contacto">{% for error in actividad_form.contacto.errors %}{{ error }}{% endfor %}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <label class="form-label" for="{{ actividad_form.telefono.id_for_label }}">{{ actividad_form.telefono.label }}</label>
+                        {{ actividad_form.telefono }}
+                        <div class="invalid-feedback d-block text-danger small" data-errores-de="telefono">{% for error in actividad_form.telefono.errors %}{{ error }}{% endfor %}</div>
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    {{ actividad_form.agenda_colectiva }}
+                    <label class="form-check-label" for="{{ actividad_form.agenda_colectiva.id_for_label }}">{{ actividad_form.agenda_colectiva.label }}</label>
+                </div>
             </fieldset>
         </div>
         <div class="col-md-5">
             <fieldset class="mb-4">
                 <legend class="h6">Evidencia</legend>
-                {% for field in evidencia_form %}
-                <div class="mb-3">
-                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    <div class="form-text">Formatos permitidos: jpg, jpeg, png, pdf — máximo 5 MB.</div>
-                    <div class="invalid-feedback d-block text-danger small" data-errores-de="{{ field.name }}">
-                        {% for error in field.errors %}{{ error }}{% endfor %}
-                    </div>
+                <div class="evidencia-dropzone text-center p-4 mb-2">
+                    <div class="mb-2" style="font-size: 2.5rem;">📄</div>
+                    {{ evidencia_form.archivo }}
+                    <div class="form-text mt-2">Formatos permitidos: jpg, jpeg, png, pdf — máximo 5 MB.</div>
                 </div>
-                {% endfor %}
+                <div class="invalid-feedback d-block text-danger small" data-errores-de="archivo">{% for error in evidencia_form.archivo.errors %}{{ error }}{% endfor %}</div>
             </fieldset>
         </div>
     </div>
     <button class="btn btn-primary" type="submit">Guardar actividad</button>
 </form>
+
+<style>
+.evidencia-dropzone {
+    border: 2px dashed #adb5bd;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+</style>
 
 <script>
 document.getElementById("form-actividad").addEventListener("submit", function (evento) {

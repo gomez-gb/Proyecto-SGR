@@ -28,6 +28,10 @@ class EstiloBootstrapMixin:
 
 
 class ActividadForm(EstiloBootstrapMixin, forms.ModelForm):
+    # Declarado explícito por la misma razón que ValidacionForm.decision: evita
+    # la opción en blanco "- Select an option -" que ModelForm agrega sola.
+    item = forms.ChoiceField(choices=Actividad.Item.choices, label="Ítem")
+
     class Meta:
         model = Actividad
         fields = ["fecha", "item", "solicitud_problema", "accion_realizada", "contacto", "telefono", "agenda_colectiva"]
