@@ -201,20 +201,29 @@ def actualizar_estado_compromiso(request, pk):
     return redirect("operacion:agenda_compartida")
 
 
-@requiere_verificador
-def lista_pendientes_validacion(request):
-    evidencias = (
+def _evidencias_pendientes():
+    return (
         Evidencia.objects.filter(estado_revision="pendiente")
         .exclude(archivo="")
         .select_related("actividad", "actividad__funcionario")
         .order_by("fecha_registro")
     )
-    return render(request, "operacion/lista_pendientes_validacion.html", {"evidencias": evidencias})
+
+
+@requiere_verificador
+def lista_pendientes_validacion(request):
+    """Punto de entrada del Wireframe2: redirige a la primera evidencia pendiente
+    (panel maestro-detalle), o muestra el estado vacío si no hay ninguna."""
+    primera = _evidencias_pendientes().first()
+    if primera:
+        return redirect("operacion:validar_evidencia", pk=primera.pk)
+    return render(request, "operacion/validar_evidencia.html", {"evidencias": [], "evidencia": None, "form": None})
 
 
 @requiere_verificador
 def validar_evidencia(request, pk):
     evidencia = get_object_or_404(Evidencia, pk=pk)
+    evidencias = _evidencias_pendientes()
     if not evidencia.archivo:
         messages.error(request, "Esta evidencia todavía no tiene archivo adjunto.")
         return redirect("operacion:lista_pendientes_validacion")
@@ -253,7 +262,7 @@ def validar_evidencia(request, pk):
             return redirect("operacion:lista_pendientes_validacion")
     else:
         form = ValidacionForm()
-    return render(request, "operacion/validar_evidencia.html", {"form": form, "evidencia": evidencia})
+    return render(request, "operacion/validar_evidencia.html", {"form": form, "evidencia": evidencia, "evidencias": evidencias})
 
 
 @requiere_administrador
